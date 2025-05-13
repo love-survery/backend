@@ -4,6 +4,7 @@ const bodyParser = require("body-parser");
 const mysql = require("mysql2/promise");
 const { Parser } = require("json2csv");
 const axios = require("axios");
+const helmet = require("helmet");
 
 // 환경 변수를 상수로 정의
 const MYSQL_HOST = process.env.MYSQL_HOST || "localhost";
@@ -21,6 +22,10 @@ const ORIGIN = process.env.ORIGIN || "https://love-survery.injun.dev";
 const app = express();
 app.use(cors({ origin: ORIGIN, credentials: true }));
 app.use(bodyParser.json());
+app.use(helmet({
+  crossOriginOpenerPolicy: { policy: 'same-origin-allow-popups' },
+  crossOriginEmbedderPolicy: false
+}));
 
 // MySQL 연결 설정
 const db = mysql.createPool({
