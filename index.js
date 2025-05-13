@@ -16,7 +16,7 @@ const GOOGLE_CLIENT_ID =
   "940848428759-0iuk6hshn82nhrpc4elnfsf8t97ijqaa.apps.googleusercontent.com";
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "boss20088002@gmail.com";
 const PORT = process.env.PORT || 4000;
-const ORIGIN = process.env.ORIGIN || "love-survery.injun.dev";
+const ORIGIN = process.env.ORIGIN || "https://love-survery.injun.dev";
 
 const app = express();
 app.use(cors({ origin: ORIGIN, credentials: true }));
