@@ -5,16 +5,29 @@ const mysql = require("mysql2/promise");
 const { Parser } = require("json2csv");
 const axios = require("axios");
 
+// 환경 변수를 상수로 정의
+const MYSQL_HOST = process.env.MYSQL_HOST || "localhost";
+const MYSQL_PORT = process.env.MYSQL_PORT || 3306;
+const MYSQL_USER = process.env.MYSQL_USER || "root";
+const MYSQL_PASSWORD = process.env.MYSQL_PASSWORD || "0000";
+const MYSQL_DATABASE = process.env.MYSQL_DATABASE || "love_survey";
+const GOOGLE_CLIENT_ID =
+  process.env.GOOGLE_CLIENT_ID ||
+  "940848428759-0iuk6hshn82nhrpc4elnfsf8t97ijqaa.apps.googleusercontent.com";
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "boss20088002@gmail.com";
+const PORT = process.env.PORT || 4000;
+
 const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 
 // MySQL 연결 설정
 const db = mysql.createPool({
-  host: process.env.MYSQL_HOST,
-  user: process.env.MYSQL_USER,
-  password: process.env.MYSQL_PASSWORD,
-  database: process.env.MYSQL_DATABASE,
+  host: MYSQL_HOST,
+  port: MYSQL_PORT,
+  user: MYSQL_USER,
+  password: MYSQL_PASSWORD,
+  database: MYSQL_DATABASE,
 });
 
 // 설문 제출 API
@@ -53,7 +66,7 @@ async function verifyGoogleToken(idToken) {
 
   console.log("🧪 Google 응답:", res.data);
 
-  if (res.data.aud !== process.env.GOOGLE_CLIENT_ID) {
+  if (res.data.aud !== GOOGLE_CLIENT_ID) {
     throw new Error("Invalid Token");
   }
 
@@ -73,9 +86,9 @@ app.get("/export", async (req, res) => {
     const { email } = await verifyGoogleToken(token);
 
     console.log("🟡 받은 이메일:", email);
-    console.log("🟡 관리자 이메일:", process.env.ADMIN_EMAIL);
+    console.log("🟡 관리자 이메일:", ADMIN_EMAIL);
 
-    if (email !== process.env.ADMIN_EMAIL) {
+    if (email !== ADMIN_EMAIL) {
       console.log("❌ 관리자 이메일 불일치");
       return res.status(403).json({ message: "관리자만 접근할 수 있습니다." });
     }
@@ -113,6 +126,6 @@ app.get("/export", async (req, res) => {
 });
 
 // 서버 실행
-app.listen(process.env.PORT, () => {
-  console.log(`✅ 서버 실행 중: http://localhost:${process.env.PORT}`);
+app.listen(PORT, () => {
+  console.log(`✅ 서버 실행 중: http://localhost:${PORT}`);
 });
