@@ -43,12 +43,10 @@ app.post("/submit", async (req, res) => {
     if (rows.length > 0) {
       return res.status(409).json({ message: "이미 설문을 제출했습니다." });
     }
-
     await db.execute(
       "INSERT INTO submissions (user_id, email, data, submitted_at) VALUES (?, ?, ?, NOW())",
       [userId, email, JSON.stringify(answers)]
     );
-
     res.json({ message: "제출 완료!" });
   } catch (err) {
     console.error(err);
@@ -56,67 +54,65 @@ app.post("/submit", async (req, res) => {
   }
 });
 
-// 설문 데이터 CSV로 다운로드 API
-// 설문 데이터 CSV로 다운로드 API (관리자만)
-
 // Google 토큰 검증 함수
 async function verifyGoogleToken(idToken) {
   const res = await axios.get(
     `https://oauth2.googleapis.com/tokeninfo?id_token=${idToken}`
   );
-
   console.log("🧪 Google 응답:", res.data);
-
   if (res.data.aud !== GOOGLE_CLIENT_ID) {
     throw new Error("Invalid Token");
   }
-
   return { email: res.data.email, sub: res.data.sub };
 }
 
 // 관리자만 설문 CSV 다운로드 API
 app.get("/export", async (req, res) => {
   const token = req.headers.authorization?.split("Bearer ")[1];
-
   if (!token) {
     console.log("❌ 토큰 없음");
     return res.status(401).json({ message: "토큰이 없습니다." });
   }
-
+  
   try {
     const { email } = await verifyGoogleToken(token);
-
     console.log("🟡 받은 이메일:", email);
     console.log("🟡 관리자 이메일:", ADMIN_EMAIL);
-
+    
     if (email !== ADMIN_EMAIL) {
       console.log("❌ 관리자 이메일 불일치");
       return res.status(403).json({ message: "관리자만 접근할 수 있습니다." });
     }
-
+    
     const [rows] = await db.execute("SELECT * FROM submissions");
-
+    
+    // 데이터가 없는 경우 처리
+    if (rows.length === 0) {
+      return res.status(404).json({ message: "다운로드할 데이터가 없습니다." });
+    }
+    
     const data = rows.map((row) => {
       let parsedData;
       try {
-        // 문자열이면 파싱하고, 이미 객체면 그대로 사용
-        parsedData =
-          typeof row.data === "string" ? JSON.parse(row.data) : row.data;
+        parsedData = typeof row.data === "string" ? JSON.parse(row.data) : row.data;
       } catch (e) {
         console.error("❌ JSON 파싱 실패:", e);
         parsedData = {}; // 파싱 실패 시 빈 객체로 대체
       }
-
+      
       return {
         email: row.email,
         submittedAt: row.submitted_at,
         ...parsedData,
       };
     });
-
-    const parser = new Parser();
+    
+    // 필드 옵션 명시적 설정
+    const fields = Object.keys(data[0]);
+    
+    const parser = new Parser({ fields });
     const csv = parser.parse(data);
-
+    
     res.header("Content-Type", "text/csv");
     res.attachment("submissions.csv");
     res.send(csv);
