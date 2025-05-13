@@ -2,11 +2,8 @@ const express = require("express");
 const cors = require("cors");
 const bodyParser = require("body-parser");
 const mysql = require("mysql2/promise");
-const dotenv = require("dotenv");
 const { Parser } = require("json2csv");
 const axios = require("axios");
-
-dotenv.config();
 
 const app = express();
 app.use(cors());
