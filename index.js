@@ -70,6 +70,43 @@ async function verifyGoogleToken(idToken) {
   }
   return { email: res.data.email, sub: res.data.sub };
 }
+app.get("/admin/data", async (req, res) => {
+  const token = req.headers.authorization?.split("Bearer ")[1];
+  if (!token) return res.status(401).json({ message: "토큰 없음" });
+
+  try {
+    const { email } = await verifyGoogleToken(token);
+    if (email !== process.env.ADMIN_EMAIL) return res.status(403).json({ message: "권한 없음" });
+
+    const [rows] = await db.execute("SELECT id, email, submitted_at, data FROM submissions ORDER BY submitted_at DESC");
+    const data = rows.map((row) => ({
+      id: row.id,
+      email: row.email,
+      submittedAt: row.submitted_at,
+      ...JSON.parse(row.data),
+    }));
+    res.json(data);
+  } catch (e) {
+    res.status(401).json({ message: "토큰 검증 실패", error: e.message });
+  }
+});
+
+app.delete("/admin/data/:id", async (req, res) => {
+  const token = req.headers.authorization?.split("Bearer ")[1];
+  if (!token) return res.status(401).json({ message: "토큰 없음" });
+
+  try {
+    const { email } = await verifyGoogleToken(token);
+    if (email !== process.env.ADMIN_EMAIL) return res.status(403).json({ message: "권한 없음" });
+
+    const { id } = req.params;
+    await db.execute("DELETE FROM submissions WHERE id = ?", [id]);
+    res.json({ message: "삭제 완료" });
+  } catch (e) {
+    res.status(401).json({ message: "실패", error: e.message });
+  }
+});
+
 
 // 관리자만 설문 CSV 다운로드 API
 app.get("/export", async (req, res) => {
